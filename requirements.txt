@@ -1,3 +1,2 @@
 streamlit
 PyPDF2
-llama-cpp-python
