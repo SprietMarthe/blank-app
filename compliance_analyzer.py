@@ -1,10 +1,17 @@
 import os
 import json
 import re
-import replicate
 from typing import Dict, List, Tuple, Any, Optional
 import gdpr_web_scraper
 from fallback_analyzer import GDPRFallbackAnalyzer
+try:
+    import replicate
+    REPLICATE_AVAILABLE = True
+except ImportError:
+    REPLICATE_AVAILABLE = False
+    print("Warning: 'replicate' package not available. LLM analysis will be disabled.")
+
+
 
 class GDPRReplicateAnalyzer:
 
