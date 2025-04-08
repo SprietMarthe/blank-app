@@ -1,5 +1,7 @@
 .streamlit/secrets.toml
 
+*replicate_api.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

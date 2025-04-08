@@ -1,2 +1,6 @@
-streamlit
-PyPDF2
+streamlit>=1.24.0
+PyPDF2>=3.0.0
+replicate>=0.20.0
+lxml
+llama-cpp
+

@@ -3,14 +3,41 @@ import datetime
 import io
 import PyPDF2
 import os
+import replicate
 from compliance_analyzer import get_gdpr_analyzer
+
+
+# TODO: Path to your file
+api_token_file_path = 'replicate_api.txt'
+
+# Read the API token from the file
+try:
+    with open(api_token_file_path, 'r') as file:
+        api_token = file.read().strip()
+    
+    # Set the API token as an environment variable
+    os.environ["REPLICATE_API_TOKEN"] = api_token
+    print("API Token set successfully from replicate_api.txt.")
+except FileNotFoundError:
+    print(f"Error: The file '{api_token_file_path}' was not found.")
+except Exception as e:
+    print(f"Error reading or setting the API token: {e}")
+
+
 
 # Initialize the GDPR compliance analyzer
 @st.cache_resource
 def load_analyzer():
-    # Try to use Llama if available, otherwise use the fallback analyzer
-    model_path = os.environ.get("LLAMA_MODEL_PATH", None)
-    return get_gdpr_analyzer(use_llama=True, model_path=model_path)
+    # Try to use Replicate API if available, otherwise use the fallback analyzer
+    api_token = os.environ.get("REPLICATE_API_TOKEN", None)
+    # If not in environment, check if it was stored in session state
+    if api_token is None and "replicate_api_token" in st.session_state:
+        api_token = st.session_state.replicate_api_token
+    
+    # Get the use_web_scraper setting from session state
+    use_web_scraper = st.session_state.get("use_web_scraper", True)
+        
+    return get_gdpr_analyzer(use_replicate=True, api_token=api_token, use_web_scraper=use_web_scraper)
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_file):
@@ -19,6 +46,76 @@ def extract_text_from_pdf(pdf_file):
     for page_num in range(len(pdf_reader.pages)):
         text += pdf_reader.pages[page_num].extract_text()
     return text
+
+# Function to stream real-time analysis
+def stream_llm_analysis(document_text, container, progress_bar):
+    if len(document_text) > 15000:
+        document_text = document_text[:15000] + "..."
+    
+    # Get analyzer to access GDPR data
+    analyzer = load_analyzer()
+    
+    # Get latest GDPR requirements
+    gdpr_info = ""
+    for i, req in enumerate(analyzer.gdpr_data["key_requirements"][:5]):  # Top 5 requirements
+        gdpr_info += f"{i+1}. {req}\n"
+    
+    if "recent_changes" in analyzer.gdpr_data and analyzer.gdpr_data["recent_changes"]:
+        gdpr_info += f"\nRecent updates: {analyzer.gdpr_data['recent_changes']}\n"
+    
+    # Create prompt for the LLM with the latest info
+    prompt = f"""You are a GDPR compliance expert with knowledge of the latest requirements:
+
+{gdpr_info}
+
+Analyze the following document for GDPR compliance issues.
+Focus on these areas: consent management, data anonymization, policy updates, data subject rights, 
+data breach procedures, and third-party data processing.
+
+For each area where the document is lacking, provide specific weaknesses and suggested actions.
+Format your response as JSON with 'weak_points' and 'actions' arrays.
+
+Here is the document:
+
+{document_text}
+
+JSON Response:"""
+    
+    # Set up input parameters for the Replicate API
+    input_params = {
+        "prompt": prompt,
+        "temperature": 0.1,
+        "top_p": 1.0,
+        "max_tokens": 2000,
+        "presence_penalty": 0
+    }
+    
+    progress_bar.progress(10, text="Starting Llama analysis...")
+    
+    # Display streaming output
+    container.write("### Real-time Llama analysis:")
+    streaming_output = container.empty()
+    response_text = ""
+    
+    try:
+        for i, event in enumerate(replicate.stream(
+            "meta/meta-llama-3.1-70b",
+            input=input_params
+        )):
+            response_text += str(event)
+            streaming_output.write(response_text)
+            
+            # Update progress bar
+            progress = min(10 + int(i / 5) % 90, 95)  # Cap at 95%
+            progress_bar.progress(progress, text="Processing with Llama...")
+            
+        # Final progress
+        progress_bar.progress(100, text="Analysis complete!")
+        return response_text
+    except Exception as e:
+        container.error(f"Error with Replicate API: {str(e)}")
+        progress_bar.progress(100, text="Analysis complete with errors")
+        return None
 
 # Streamlit UI
 def main():
@@ -31,6 +128,16 @@ def main():
     
     st.title("📄 GDPR Compliance Analysis Tool")
     
+    # Initialize session state for API token if not already set
+    if "replicate_api_token" not in st.session_state:
+        st.session_state.replicate_api_token = ""
+
+    if "use_web_scraper" not in st.session_state:
+        st.session_state.use_web_scraper = True
+    
+    if "gdpr_web_data" not in st.session_state:
+        st.session_state.gdpr_web_data = None
+    
     # Load the sidebar with information
     with st.sidebar:
         st.header("About this Tool")
@@ -42,6 +149,21 @@ def main():
         GDPR-related document to get started.
         """)
         
+        # API Token input in sidebar
+        st.subheader("Replicate API")
+        api_token_input = st.text_input(
+            "Enter Replicate API Token",
+            type="password",
+            value=st.session_state.replicate_api_token,
+            help="Get your API token from Replicate.com"
+        )
+        
+        if api_token_input != st.session_state.replicate_api_token:
+            st.session_state.replicate_api_token = api_token_input
+            # Set environment variable
+            os.environ["REPLICATE_API_TOKEN"] = api_token_input
+            st.rerun()  # Reload the app to use the new API token
+        
         st.header("Latest GDPR Updates")
         analyzer = load_analyzer()
         st.info(analyzer.gdpr_data["recent_changes"])
@@ -49,25 +171,27 @@ def main():
         # Show model information
         st.header("Technical Information")
         if hasattr(analyzer, 'model_loaded') and analyzer.model_loaded:
-            st.success("✅ Using Llama model for advanced analysis")
+            st.success(f"✅ Using {analyzer.model_name} via Replicate for advanced analysis")
+            st.write("The analyzer is using Replicate API to provide sophisticated analysis of your GDPR documents.")
         else:
-            st.warning("⚠️ Using rule-based analysis (Llama not available)")
+            st.warning("⚠️ Using rule-based analysis (Replicate API not available)")
             
-            with st.expander("How to enable Llama"):
+            with st.expander("How to enable Replicate API"):
                 st.write("""
                 To enable the Llama model for more sophisticated analysis:
                 
-                1. Install the llama-cpp-python package:
-                   ```
-                   pip install llama-cpp-python
-                   ```
+                1. Sign up for Replicate at: https://replicate.com/
+                2. Obtain an API token from your account settings
+                3. Enter your API token in the text box above
                 
-                2. Download a compatible Llama model and set the path:
-                   ```
-                   export LLAMA_MODEL_PATH=/path/to/your/llama-model.bin
-                   ```
+                Alternatively, you can set the REPLICATE_API_TOKEN environment variable before starting the app.
+                """)
                 
-                3. Restart this application
+                st.write("""
+                You will also need to install the LangChain packages:
+                ```
+                pip install langchain langchain-community
+                ```
                 """)
 
     # Main content
@@ -117,6 +241,9 @@ def main():
         
         # Button to trigger analysis
         if document_text and st.button("Analyze GDPR Compliance", type="primary"):
+            if not hasattr(analyzer, 'model_loaded') or not analyzer.model_loaded:
+                st.warning("⚠️ LLM analysis not available. Using basic rule-based analysis instead.")
+                
             with st.spinner("Analyzing your document..."):
                 # Show a progress bar for visual feedback
                 progress_bar = st.progress(0)
@@ -138,7 +265,7 @@ def main():
             with col2:
                 st.metric("Word Count", f"{len(document_text.split())} words")
             
-            # Display compliance score
+            # Display compliance score # TODO 
             if weak_points:
                 compliance_score = max(10, 100 - (len(weak_points) * 15))
             else:
