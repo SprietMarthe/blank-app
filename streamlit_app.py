@@ -3,7 +3,12 @@ import datetime
 import io
 import PyPDF2
 import os
-import replicate
+try:
+    import replicate
+    REPLICATE_AVAILABLE = True
+except ImportError:
+    REPLICATE_AVAILABLE = False
+    print("Warning: 'replicate' package not available. LLM analysis will be disabled.")
 from compliance_analyzer import get_gdpr_analyzer
 
 
