@@ -167,23 +167,6 @@ class GDPRReplicateAnalyzer:
                 print(f"Error updating GDPR requirements: {e}")
         
         print("Could not update GDPR requirements from the web")
-
-    def update_gdpr_requirements(self) -> None:
-        """
-        Update GDPR requirements from the web if a scraper is available.
-        This can be called to refresh the requirements data.
-        """
-        if self.scraper:
-            try:
-                new_requirements = self.scraper.get_gdpr_requirements()
-                if new_requirements and new_requirements.get("key_requirements"):
-                    self.gdpr_data = new_requirements
-                    print("Successfully updated GDPR requirements from the web")
-                    return
-            except Exception as e:
-                print(f"Error updating GDPR requirements: {e}")
-        
-        print("Could not update GDPR requirements from the web")
     
     def _analyze_with_replicate(self, document_text: str) -> Dict[str, List[str]]:
         """
@@ -202,13 +185,7 @@ class GDPRReplicateAnalyzer:
         max_length = 15000  # Llama models have a large context window, but we'll be conservative
         if len(document_text) > max_length:
             document_text = document_text[:max_length] + "..."
-        
-        # Add recent GDPR changes to the prompt context
-        gdpr_context = f"Recent GDPR changes: {self.gdpr_data['recent_changes']}\n\n"
-        gdpr_context += "Key GDPR requirements:\n"
-        for i, req in enumerate(self.gdpr_data["key_requirements"][:5]):  # Include top 5 requirements
-            gdpr_context += f"- {req}\n"
-        
+
         # Add recent GDPR changes to the prompt context
         gdpr_context = f"Recent GDPR changes: {self.gdpr_data['recent_changes']}\n\n"
         gdpr_context += "Key GDPR requirements:\n"
@@ -244,13 +221,26 @@ JSON Response:"""
             }
             
             # Call the Replicate API
-            response_text = ""
-            for event in replicate.stream(
+            # response_text = ""
+            # for event in replicate.stream(
+            #     self.model_name,
+            #     input=input_params
+            # ):
+            #     response_text += str(event)
+            #     print("response: ", response_text)
+            response = replicate.run(
                 self.model_name,
                 input=input_params
-            ):
-                response_text += str(event)
-                print("response: ", response_text)
+            )
+            
+            # For models that return lists/iterables, join them
+            if isinstance(response, list) or hasattr(response, '__iter__') and not isinstance(response, str):
+                response_text = "".join([str(item) for item in response])
+            else:
+                response_text = str(response)
+                
+            print("response: ", response_text)
+
             
             # Try to extract JSON from response
             try:
@@ -346,8 +336,10 @@ JSON Response:"""
             
             # Add LLM-suggested actions
             for action in llm_analysis.get("actions", []):
-                if action and not any(action in existing for existing in action_plan):
-                    action_plan.append(action)
+                if action and not any(set(point.items()).issubset(set(existing.items())) for existing in action_plan):
+                    action_plan.append(point)
+                # if action and not any(action in existing for existing in action_plan):
+                #     action_plan.append(action)
         
         # Add results from keyword analysis
         for category, is_covered in keyword_results.items():
@@ -360,20 +352,42 @@ JSON Response:"""
                         action_plan.append(action)
         
         # Remove duplicates while preserving order
-        weak_points = list(dict.fromkeys(weak_points))
-        action_plan = list(dict.fromkeys(action_plan))
-        
+        # For weak_points
+        unique_weak_points = []
+        for point in weak_points:
+            if isinstance(point, dict):
+                point_str = json.dumps(point, sort_keys=True)
+                if not any(json.dumps(existing, sort_keys=True) == point_str for existing in unique_weak_points if isinstance(existing, dict)):
+                    unique_weak_points.append(point)
+            elif point and not any(str(point) == str(existing) for existing in unique_weak_points):
+                unique_weak_points.append(point)
+        weak_points = unique_weak_points
+
+        # For action_plan
+        unique_action_plan = []
+        for action in action_plan:
+            if isinstance(action, dict):
+                action_str = json.dumps(action, sort_keys=True)
+                if not any(json.dumps(existing, sort_keys=True) == action_str for existing in unique_action_plan if isinstance(existing, dict)):
+                    unique_action_plan.append(action)
+            elif action and not any(str(action) == str(existing) for existing in unique_action_plan):
+                unique_action_plan.append(action)
+        action_plan = unique_action_plan
         
         # Add general recommendations based on recent changes
-        if action_plan:
+        if action_plan and self.gdpr_data.get("recent_changes"):
             action_plan.insert(0, f"Recent GDPR changes to address: {self.gdpr_data['recent_changes']}")
-        
+
         # Add key requirements as a reference
-        if action_plan:
+        if action_plan and self.gdpr_data.get("key_requirements"):
             action_plan.append("Ensure all key GDPR requirements are met, including:")
             for req in self.gdpr_data["key_requirements"]:
-                action_plan.append(f"- {req}")
-        
+                if isinstance(req, str):
+                    action_plan.append(f"- {req}")
+                else:
+                    # Handle non-string requirements (like dictionaries)
+                    action_plan.append(f"- {str(req)}")
+
         return weak_points, action_plan
 
 
