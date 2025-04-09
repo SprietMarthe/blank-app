@@ -1,4 +1,6 @@
 from typing import Dict, List, Tuple, Any, Optional
+import gdpr_web_scraper
+
 
 class GDPRFallbackAnalyzer:
     """
@@ -8,7 +10,18 @@ class GDPRFallbackAnalyzer:
     
     def __init__(self):
         """Initialize the fallback GDPR analyzer"""
+
+        # Initialize scraper if needed
+        self.scraper = None
+        try:
+            self.scraper = gdpr_web_scraper.GDPRWebScraper()
+            print("Using web scraper to get the latest GDPR requirements")
+        except Exception as e:
+            print(f"Error initializing web scraper: {e}")
+            print("Using predefined GDPR requirements")
+
         self.gdpr_data = self.get_gdpr_requirements()
+
         
         # Keywords for different compliance categories
         self.compliance_keywords = {

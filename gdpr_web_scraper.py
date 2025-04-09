@@ -175,7 +175,7 @@ class GDPRWebScraper:
                     # Extract a summary of the principle
                     content = article_info['content']
                     # Limit to first 200 characters + find the end of the sentence
-                    summary = content[:200]
+                    summary = content[:200] + "..."
                     end_of_sentence = summary.rfind('.')
                     if end_of_sentence > 0:
                         summary = summary[:end_of_sentence + 1]

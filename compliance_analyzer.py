@@ -309,9 +309,6 @@ JSON Response:"""
         Returns:
             A tuple containing (weak_points, action_plan)
         """
-        # Perform keyword analysis
-        keyword_results = self._keyword_analysis(document_text)
-        
         # Initialize results
         weak_points = []
         action_plan = []
@@ -322,34 +319,31 @@ JSON Response:"""
             
             # Add LLM-identified weak points
             for point in llm_analysis.get("weak_points", []):
-                # Convert dict to tuple of items for comparison
-                if point and not any(set(point.items()).issubset(set(existing.items())) for existing in weak_points):
+                if point and not any(set(point.items()).issubset(set(existing.items())) for existing in weak_points if isinstance(existing, dict) and isinstance(point, dict)):
                     weak_points.append(point)
-                # Convert dict to JSON string for comparison
-                # point_str = json.dumps(point, sort_keys=True)
-                # if point and not any(json.dumps(existing, sort_keys=True) == point_str for existing in weak_points):
-                #     weak_points.append(point)
-                # Convert dict to JSON string for comparison
-                # point_str = json.dumps(point, sort_keys=True)
-                # if point and not any(json.dumps(existing, sort_keys=True) == point_str for existing in weak_points):
-                #     weak_points.append(point)
             
             # Add LLM-suggested actions
             for action in llm_analysis.get("actions", []):
-                if action and not any(set(point.items()).issubset(set(existing.items())) for existing in action_plan):
-                    action_plan.append(point)
-                # if action and not any(action in existing for existing in action_plan):
-                #     action_plan.append(action)
+                if action and not any(action == existing for existing in action_plan):
+                    action_plan.append(action)
         
-        # Add results from keyword analysis
-        for category, is_covered in keyword_results.items():
-            if not is_covered:
-                weak_points.append(self.gdpr_data["common_weak_points"][category])
-                
-                # Add relevant action items
-                for action in self.gdpr_data["action_templates"][category]:
-                    if not any(action in existing for existing in action_plan):
-                        action_plan.append(action)
+        # If LLM didn't find anything, fallback to keyword analysis
+        if not weak_points:
+            # Perform keyword analysis
+            keyword_results = self._keyword_analysis(document_text)
+            
+            # This part is commented out to avoid adding predefined content
+            # Uncomment if you want to use keyword analysis as fallback
+            '''
+            for category, is_covered in keyword_results.items():
+                if not is_covered:
+                    weak_points.append(self.gdpr_data["common_weak_points"][category])
+                    
+                    # Add relevant action items
+                    for action in self.gdpr_data["action_templates"][category]:
+                        if not any(action in existing for existing in action_plan):
+                            action_plan.append(action)
+            '''
         
         # Remove duplicates while preserving order
         # For weak_points
@@ -376,13 +370,20 @@ JSON Response:"""
         
         # Add general recommendations based on recent changes
         if action_plan and self.gdpr_data.get("recent_changes"):
-            action_plan.insert(0, f"Recent GDPR changes to address: {self.gdpr_data['recent_changes']}")
+            # Remove "Predefined:" prefix if present
+            recent_changes = self.gdpr_data["recent_changes"]
+            if isinstance(recent_changes, str) and recent_changes.startswith("Predefined:"):
+                recent_changes = recent_changes[len("Predefined:"):].strip()
+            action_plan.insert(0, f"Recent GDPR changes to address: {recent_changes}")
 
         # Add key requirements as a reference
         if action_plan and self.gdpr_data.get("key_requirements"):
             action_plan.append("Ensure all key GDPR requirements are met, including:")
             for req in self.gdpr_data["key_requirements"]:
                 if isinstance(req, str):
+                    # Remove "Predefined:" prefix if present
+                    if req.startswith("Predefined:"):
+                        req = req[len("Predefined:"):].strip()
                     action_plan.append(f"- {req}")
                 else:
                     # Handle non-string requirements (like dictionaries)

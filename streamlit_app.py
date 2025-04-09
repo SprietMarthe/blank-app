@@ -154,20 +154,24 @@ def main():
         GDPR-related document to get started.
         """)
         
-        # API Token input in sidebar
-        st.subheader("Replicate API")
-        api_token_input = st.text_input(
-            "Enter Replicate API Token",
-            type="password",
-            value=st.session_state.replicate_api_token,
-            help="Get your API token from Replicate.com"
-        )
+        # Check if API token file was found
+        api_token_file_found = os.path.exists(api_token_file_path)
         
-        if api_token_input != st.session_state.replicate_api_token:
-            st.session_state.replicate_api_token = api_token_input
-            # Set environment variable
-            os.environ["REPLICATE_API_TOKEN"] = api_token_input
-            st.rerun()  # Reload the app to use the new API token
+        # Only show API token input if file wasn't found and no token is in session state
+        if not api_token_file_found and not os.environ.get("REPLICATE_API_TOKEN"):
+            st.subheader("Replicate API")
+            api_token_input = st.text_input(
+                "Enter Replicate API Token",
+                type="password",
+                value=st.session_state.replicate_api_token,
+                help="Get your API token from Replicate.com"
+            )
+            
+            if api_token_input and api_token_input != st.session_state.replicate_api_token:
+                st.session_state.replicate_api_token = api_token_input
+                # Set environment variable
+                os.environ["REPLICATE_API_TOKEN"] = api_token_input
+                st.rerun()  # Reload the app to use the new API token
         
         st.header("Latest GDPR Updates")
         analyzer = load_analyzer()
@@ -215,12 +219,12 @@ def main():
                 type=["txt", "pdf", "docx"]
             )
             
-        with col2:
-            st.subheader("Or Paste Text")
-            sample_text = st.text_area(
-                "Paste document text here:", 
-                height=200
-            )
+        # with col2:
+        #     st.subheader("Or Paste Text")
+        #     sample_text = st.text_area(
+        #         "Paste document text here:", 
+        #         height=200
+        #     )
         
         # Initialize the analyzer
         analyzer = load_analyzer()
@@ -241,8 +245,8 @@ def main():
             # Show a preview of the document
             with st.expander("Document Preview"):
                 st.text(document_text[:1000] + ("..." if len(document_text) > 1000 else ""))
-        elif sample_text:
-            document_text = sample_text
+        # elif sample_text:
+        #     document_text = sample_text
         
         # Button to trigger analysis
         if document_text and st.button("Analyze GDPR Compliance", type="primary"):
@@ -291,15 +295,37 @@ def main():
             st.subheader("Identified Compliance Gaps:")
             if weak_points:
                 for i, point in enumerate(weak_points):
-                    st.warning(f"{i+1}. {point}")
+                    if isinstance(point, dict):
+                        # Extract formatted text from the dictionary
+                        if 'area' in point and 'description' in point:
+                            formatted_point = f"{point['area']}: {point['description']}"
+                        else:
+                            # Fallback for other dictionary formats
+                            formatted_point = str(point)
+                        st.warning(f"{i+1}. {formatted_point}")
+                    else:
+                        # Handle strings as before
+                        st.warning(f"{i+1}. {point}")
             else:
                 st.success("Your document appears to cover all major GDPR compliance areas!")
-                    
+            
             # Display action plan
             st.subheader("Recommended Action Plan:")
             if action_plan:
                 for i, action in enumerate(action_plan):
-                    if action.startswith("- "):
+                    if isinstance(action, dict):
+                        # Extract formatted text from the dictionary
+                        if 'area' in action and 'action' in action:
+                            formatted_action = f"{action['area']}: {action['action']}"
+                        else:
+                            # Fallback for other dictionary formats
+                            formatted_action = str(action)
+                            
+                        if formatted_action.startswith("- "):
+                            st.write(f"  {formatted_action}")
+                        else:
+                            st.write(f"{i+1}. {formatted_action}")
+                    elif isinstance(action, str) and action.startswith("- "):
                         st.write(f"  {action}")
                     else:
                         st.write(f"{i+1}. {action}")
