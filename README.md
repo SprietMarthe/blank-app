@@ -126,11 +126,11 @@ A full demo and example documents are provided inside the `demo/` folder:
 
 Good Compliance Result:
 
-![Good Compliance Example](demo/Good_Compliance.png)
+![Good Compliance Example](Demo/Good_Compliance.png)
 
 Good Compliance Llama 3.1 Result:
 
-![Good Compliance Llama 3.1 Example](demo/Good_Compliance_Llama3.1-405b-instruct.png)
+![Good Compliance Llama 3.1 Example](Demo/Good_Compliance_Llama3.1-405b-instruct.png)
 
 ## 📝 License
 
