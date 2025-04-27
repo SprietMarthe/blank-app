@@ -1,78 +1,142 @@
 # GDPR Compliance Analyzer
 
-A tool to analyze documents for GDPR compliance using Llama or rule-based analysis.
+A powerful tool to **analyze documents for GDPR compliance** using either an advanced **AI-powered model (via Replicate API)** or a **rule-based fallback analyzer**.  
+Built with **Streamlit**, it provides easy document uploads, analysis, and actionable compliance insights.
 
-## Overview
+---
 
-This application helps you analyze your organization's documents for GDPR compliance. It can identify potential compliance gaps and provide recommendations based on the latest GDPR regulations.
+## 🚀 Project Overview
 
-The system can work in two modes:
-1. **Llama-powered mode**: Uses the Llama language model for sophisticated analysis
-2. **Fallback mode**: Uses rule-based keyword analysis when Llama isn't available
+This project allows users to upload privacy policies, terms of service, or any GDPR-relevant documents to:
 
-## Features
+- Detect GDPR compliance gaps
+- Score the overall compliance level
+- Generate a tailored action plan
 
-- Upload and analyze privacy policies, data protection statements, or any GDPR-related documents
-- Support for various file formats: TXT, PDF
-- Identify compliance gaps in key GDPR areas
-- Generate actionable recommendations tailored to your document
-- Score your document's GDPR compliance level
-- Provide up-to-date information on GDPR requirements
-- Export recommendations as a downloadable action plan
+It supports both:
+- **LLM-Powered Analysis** (using Replicate's API)
+- **Fallback Rule-Based Analysis** (keywords and heuristics)
 
-## Installation
+---
 
-### Basic Installation
+## 📂 Project Structure
 
-1. Clone this repository:
+| File | Purpose |
+|:---|:---|
+| `compliance_analyzer.py` | Core logic for analyzing text using the Replicate API model (if available) |
+| `fallback_analyzer.py` | Backup method: simple rule-based keyword spotting for GDPR violations |
+| `gdpr_web_scraper.py` | (Optional/Planned) Scrapes GDPR official websites for latest rules (currently auxiliary) |
+| `streamlit_app.py` | Streamlit front-end app that brings everything together (user interface) |
+| `requirements.txt` | Python dependencies list |
+| `.devcontainer/`, `.github/`, `.gitignore` | DevOps and environment setup files |
+| `LICENSE` | Open-source license (Apache 2.0) |
+
+---
+
+## ⚙️ Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/SprietMarthe/nlp_gdpr_compliance.git
+   cd nlp_gdpr_compliance
    ```
-   git clone https://github.com/yourusername/gdpr-compliance-analyzer.git
-   cd gdpr-compliance-analyzer
-   ```
 
-2. Create a virtual environment and activate it:
-   ```
+2. **Set up your virtual environment:**
+   ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate    # For Linux/Mac
+   venv\Scripts\activate       # For Windows
    ```
 
-3. Install the required packages:
-   ```
-   pip install streamlit PyPDF2
-   ```
-
-4. Run the application in fallback mode (no Llama required):
-   ```
-   streamlit run gdpr_llama_app.py
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
    ```
 
-### Installing with Llama Support (Optional)
+---
 
-For more sophisticated analysis, you can enable Llama support:
+## 🔐 Setting Your API Key (Replicate)
 
-1. Install the llama-cpp-python package:
-   ```
-   pip install llama-cpp-python
-   ```
+To use **advanced AI analysis**, you must set your **Replicate API token**.
 
-2. Download a compatible Llama model:
-   - Option 1: Download from Hugging Face (requires account)
-   - Option 2: Use a compatible quantized model
+There are two ways:
+- **Option 1**: Create a `replicate_api.txt` file in the project root, containing your API key. (Recommended when cloning code.)
+- **Option 2**: Set your API key in **Streamlit secrets** (`.streamlit/secrets.toml`):
 
-3. Set the environment variable to your model path:
-   ```
-   # Linux/Mac
-   export LLAMA_MODEL_PATH=/path/to/your/llama-model.bin
-   
-   # Windows
-   set LLAMA_MODEL_PATH=C:\path\to\your\llama-model.bin
-   ```
+Example `secrets.toml`:
+```toml
+REPLICATE_API_TOKEN = "your-replicate-api-token-here"
+```
 
-4. Run the application:
-   ```
-   streamlit run gdpr_llama_app.py
-   ```
+Inside the code, the API key is handled safely:
+```python
+# Set API token
+self.api_token = api_token or os.environ.get("REPLICATE_API_TOKEN")
+self.model_loaded = self.api_token is not None
 
-## Using the Application
+# Set environment variable if provided
+if self.api_token and "REPLICATE_API_TOKEN" not in os.environ:
+    os.environ["REPLICATE_API_TOKEN"] = self.api_token
+```
 
-1. Open the application in your web
+> ⚠️ **IMPORTANT**: If no API token is provided, the app will automatically fall back to the rule-based analyzer.
+
+---
+
+## 🖥️ Running the Application
+
+To start the app:
+```bash
+streamlit run streamlit_app.py
+```
+Then, open the URL that appears (usually `http://localhost:8501`) in your browser.
+
+---
+
+
+## 🛠️ General Flow
+
+1. Launch the app.
+2. Upload a document (TXT or PDF supported).
+3. Choose between **AI-powered** or **rule-based** analysis.
+4. View:
+   - Detected GDPR gaps
+   - Recommendations for improvement
+   - Compliance score
+5. Download a compliance action plan.
+
+---
+
+## 🎥 Demo and Example Documents
+
+A full demo and example documents are provided inside the `demo/` folder:
+
+| File | Description |
+|:---|:---|
+| `demo_video.mp4` | Walkthrough video showing how the GDPR Compliance Analyzer works |
+| `example_gdpr_compliance_doc.txt` | A model card document that covers almost all GDPR compliance areas correctly, following the latest 2025 GDPR updates. |
+| `example_gdpr_doc.txt` | A basic privacy document with several major GDPR compliance gaps, used to demonstrate non-compliance detection. |
+| `Good_Compliance.png` | Screenshot example showing a high GDPR compliance score after analyzing a good document. |
+
+---
+
+### 📸 Example Output Screenshot
+
+![Good Compliance Example](Demo/Good_Compliance.png)
+
+## 📝 License
+
+This project is licensed under the **Apache 2.0 License**.  
+Feel free to use, modify, and distribute under the terms provided.
+
+---
+
+# ✨ Quick Start
+
+```bash
+git clone https://github.com/SprietMarthe/nlp_gdpr_compliance.git
+cd nlp_gdpr_compliance
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+> **Optional:** Set your Replicate API key in `replicate_api.txt` or Streamlit secrets for full AI-powered analysis!

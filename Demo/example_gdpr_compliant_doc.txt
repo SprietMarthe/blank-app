@@ -1,0 +1,88 @@
+# Model Card for "PrivacyShield NLP Analyzer"
+
+## Overview
+The "PrivacyShield NLP Analyzer" is a model designed to assist users in assessing privacy and GDPR compliance in textual documents. It is developed and maintained by PrivacyShield Technologies Ltd.
+
+---
+
+## 1. Consent Management (Articles 6, 7)
+
+We ensure that any personal data processing based on consent meets GDPR standards:
+- Consent is requested explicitly before any data processing occurs.
+- Consent records are securely maintained and time-stamped.
+- Users may withdraw consent at any time through their account settings or by contacting our Data Protection Officer (DPO).
+
+---
+
+## 2. Data Anonymization (Articles 5, 25)
+
+All input data is immediately anonymized upon receipt:
+- Personally Identifiable Information (PII) is masked during pre-processing.
+- Only anonymized text is used for model inference.
+- No original (identifiable) input data is stored after session end.
+
+---
+
+## 3. Policy Updates (Articles 12, 13)
+
+We regularly review and update our privacy policy:
+- Users are notified of any material changes via email and in-app banners 30 days before changes take effect.
+- A changelog of previous policy versions is publicly available on our website.
+- Users are given the opportunity to accept or decline significant policy updates.
+
+_Last updated: April 2025_
+
+---
+
+## 4. Data Subject Rights (Articles 12–23)
+
+We fully support user rights under the GDPR, including:
+- Right to Access
+- Right to Rectification
+- Right to Erasure ("Right to be Forgotten")
+- Right to Restriction of Processing
+- Right to Data Portability
+- Right to Object
+
+Users can submit requests by emailing **dpo@privacyshield.ai**. All requests are processed within **14 days** in compliance with updated GDPR timelines.
+
+---
+
+## 5. Data Breach Procedures (Articles 33, 34)
+
+We maintain an incident response plan:
+- All breaches are assessed within 24 hours of detection.
+- If personal data is involved, users and authorities are notified within 72 hours as required.
+- Breach details and mitigation steps are logged in an internal breach register.
+
+---
+
+## 6. Third-Party Data Processing (Articles 28, 32)
+
+Our subprocessors (such as cloud providers or AI hosting platforms) undergo annual GDPR compliance audits.  
+Key protections include:
+- Signed Data Processing Agreements (DPAs)
+- Regular verification of technical and organizational security measures
+- Subprocessors must notify us of any subprocessing or breaches immediately.
+
+---
+
+## 7. International Data Transfers (Articles 44–50)
+
+Data is primarily processed within the European Economic Area (EEA). Where necessary, transfers to third countries are protected by:
+- Standard Contractual Clauses (SCCs)
+- Adequacy decisions by the European Commission
+
+---
+
+## Contact
+
+For questions or GDPR requests:
+
+**Data Protection Officer (DPO)**  
+Email: dpo@privacyshield.ai  
+Phone: +32 456 789 123
+
+---
+
+*Model Card Version: 2.1 — Last reviewed April 20, 2025*

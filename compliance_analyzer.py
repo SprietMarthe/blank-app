@@ -193,22 +193,46 @@ class GDPRReplicateAnalyzer:
             gdpr_context += f"- {req}\n"
         
         # Craft a prompt for the LLM to analyze GDPR compliance
-        prompt = f"""You are a GDPR compliance expert with knowledge of the latest requirements:
+        prompt = f"""You are a GDPR compliance auditor specializing in the 2025 GDPR regulations.
 
-{gdpr_context}
+                {gdpr_context}
 
-Analyze the following document for GDPR compliance issues.
-Focus on these areas: consent management, data anonymization, policy updates, data subject rights, 
-data breach procedures, and third-party data processing.
+                Analyze the following document carefully.
 
-For each area where the document is lacking, provide specific weaknesses and suggested actions.
-Format your response as JSON with 'weak_points' and 'actions' arrays.
+                Focus your audit on these critical areas:
+                - Consent Management
+                - Data Anonymization
+                - Policy Updates
+                - Data Subject Rights
+                - Data Breach Procedures
+                - Third-Party Data Processing
 
-Here is the document:
+                Instructions:
 
-{document_text}
+                1. For each GDPR area:
+                - If the document fully and clearly addresses the requirement, you can skip it.
+                - If the document is missing, unclear, incomplete, or non-compliant in any area, list it under 'weak_points'.
 
-JSON Response:"""
+                2. For each weak point you find:
+                - Provide a clear and specific action item under 'actions' to improve or fix the problem.
+
+                3. Consider the latest GDPR updates:
+                - Stricter data anonymization standards (2025)
+                - Data Subject Access Requests (DSARs) must be processed within 14 days
+
+                Format your response strictly in this JSON format:
+
+                {{
+                "weak_points": [],
+                "actions": []
+                }}
+
+                Here is the document to audit:
+
+                {document_text}
+
+                JSON Response:
+        """
         
         try:
             # Set up input parameters for the Replicate API
