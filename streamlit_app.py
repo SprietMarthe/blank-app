@@ -52,75 +52,9 @@ def extract_text_from_pdf(pdf_file):
         text += pdf_reader.pages[page_num].extract_text()
     return text
 
-# Function to stream real-time analysis
-def stream_llm_analysis(document_text, container, progress_bar):
-    if len(document_text) > 15000:
-        document_text = document_text[:15000] + "..."
-    
-    # Get analyzer to access GDPR data
-    analyzer = load_analyzer()
-    
-    # Get latest GDPR requirements
-    gdpr_info = ""
-    for i, req in enumerate(analyzer.gdpr_data["key_requirements"][:5]):  # Top 5 requirements
-        gdpr_info += f"{i+1}. {req}\n"
-    
-    if "recent_changes" in analyzer.gdpr_data and analyzer.gdpr_data["recent_changes"]:
-        gdpr_info += f"\nRecent updates: {analyzer.gdpr_data['recent_changes']}\n"
-    
-    # Create prompt for the LLM with the latest info
-    prompt = f"""You are a GDPR compliance expert with knowledge of the latest requirements:
 
-{gdpr_info}
 
-Analyze the following document for GDPR compliance issues.
-Focus on these areas: consent management, data anonymization, policy updates, data subject rights, 
-data breach procedures, and third-party data processing.
 
-For each area where the document is lacking, provide specific weaknesses and suggested actions.
-Format your response as JSON with 'weak_points' and 'actions' arrays.
-
-Here is the document:
-
-{document_text}
-
-JSON Response:"""
-    
-    # Set up input parameters for the Replicate API
-    input_params = {
-        "prompt": prompt,
-        "temperature": 0.1,
-        "top_p": 1.0,
-        "max_tokens": 2000,
-        "presence_penalty": 0
-    }
-    
-    progress_bar.progress(10, text="Starting Llama analysis...")
-    
-    # Display streaming output
-    container.write("### Real-time Llama analysis:")
-    streaming_output = container.empty()
-    response_text = ""
-    
-    try:
-        for i, event in enumerate(replicate.stream(
-            "meta/meta-llama-3.1-70b",
-            input=input_params
-        )):
-            response_text += str(event)
-            streaming_output.write(response_text)
-            
-            # Update progress bar
-            progress = min(10 + int(i / 5) % 90, 95)  # Cap at 95%
-            progress_bar.progress(progress, text="Processing with Llama...")
-            
-        # Final progress
-        progress_bar.progress(100, text="Analysis complete!")
-        return response_text
-    except Exception as e:
-        container.error(f"Error with Replicate API: {str(e)}")
-        progress_bar.progress(100, text="Analysis complete with errors")
-        return None
 
 # Streamlit UI
 def main():
