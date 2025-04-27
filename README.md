@@ -116,13 +116,21 @@ A full demo and example documents are provided inside the `demo/` folder:
 | `demo_video.mp4` | Walkthrough video showing how the GDPR Compliance Analyzer works |
 | `example_gdpr_compliance_doc.txt` | A model card document that covers almost all GDPR compliance areas correctly, following the latest 2025 GDPR updates. |
 | `example_gdpr_doc.txt` | A basic privacy document with several major GDPR compliance gaps, used to demonstrate non-compliance detection. |
+| `example_gdpr_llama_doc.txt` | A model information document for Meta’s Llama 3.1-405B Instruct model, demonstrating very high GDPR compliance based on good documentation practices. |
 | `Good_Compliance.png` | Screenshot example showing a high GDPR compliance score after analyzing a good document. |
+| `Good_Compliance_Llama3.1-405b-instruct.png` | Screenshot example showing a high GDPR compliance score after analyzing the Llama 3.1 model information document. |
 
 ---
 
-### 📸 Example Output Screenshot
+### 📸 Example Output Screenshots
 
-![Good Compliance Example](Demo/Good_Compliance.png)
+Good Compliance Result:
+
+![Good Compliance Example](demo/Good_Compliance.png)
+
+Good Compliance Llama 3.1 Result:
+
+![Good Compliance Llama 3.1 Example](demo/Good_Compliance_Llama3.1-405b-instruct.png)
 
 ## 📝 License
 
